@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toy Story Claw Game</title>
+    <style>
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            background-color: #4b71b5;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        h1 {
+            color: #f9d71c;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #f9d71c;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 600px;
+            height: 500px;
+            background-color: #3a3a3a;
+            border: 10px solid #8a6642;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .toy-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .toy {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: transform 0.2s;
+            z-index: 1;
+        }
+        
+        .toy:hover {
+            transform: scale(1.1);
+        }
+        
+        .claw-machine {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background-color: #c62828;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 3;
+        }
+        
+        .claw {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,5 L50,20 M30,40 C30,30 40,20 50,20 C60,20 70,30 70,40 M30,40 L20,70 M70,40 L80,70 M50,20 L50,40 M50,40 L40,70 M50,40 L60,70" stroke="silver" stroke-width="5" fill="none"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transform-origin: center top;
+            z-index: 2;
+            transition: transform 0.5s, top 0.5s, left 0.5s;
+        }
+        
+        .claw.grabbing {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,5 L50,20 M30,40 C30,30 40,20 50,20 C60,20 70,30 70,40 M30,40 L25,60 M70,40 L75,60 M50,20 L50,40 M50,40 L45,60 M50,40 L55,60" stroke="silver" stroke-width="5" fill="none"/></svg>');
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .button-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #f9d71c;
+            color: #3a3a3a;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #ffeb3b;
+        }
+        
+        button:active {
+            background-color: #fbc02d;
+        }
+        
+        .grabbed-toys {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .score {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .timer {
+            font-size: 18px;
+            color: #ffeb3b;
+            margin-bottom: 10px;
+        }
+        
+        .api-info {
+            margin-top: 20px;
+            background-color: #2c3e50;
+            padding: 15px;
+            border-radius: 5px;
+            width: 600px;
+            max-width: 100%;
+        }
+        
+        .api-info h2 {
+            margin-top: 0;
+            color: #f9d71c;
+        }
+        
+        code {
+            background-color: #1a2530;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        .aliens-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .alien {
+            width: 30px;
+            height: 30px;
+            margin: 0 5px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="green"/><circle cx="35" cy="40" r="10" fill="white"/><circle cx="65" cy="40" r="10" fill="white"/><circle cx="35" cy="40" r="5" fill="black"/><circle cx="65" cy="40" r="5" fill="black"/><path d="M30,65 Q50,80 70,65" stroke="white" stroke-width="5" fill="none"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            animation: float 2s infinite alternate ease-in-out;
+        }
+        
+        @keyframes float {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+        
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .api-docs {
+            margin-top: 20px;
+            background-color: #2c3e50;
+            padding: 15px;
+            border-radius: 5px;
+            width: 600px;
+            max-width: 100%;
+        }
+
+        .demo-scripts {
+            margin-top: 20px;
+            background-color: #2c3e50;
+            padding: 15px;
+            border-radius: 5px;
+            width: 600px;
+            max-width: 100%;
+        }
+
+        .collapsible {
+            background-color: #3e5c76;
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 16px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        .active, .collapsible:hover {
+            background-color: #547aa5;
+        }
+
+        .content {
+            padding: 0 18px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            background-color: #1a2530;
+            border-radius: 0 0 5px 5px;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 650px) {
+            .game-container {
+                width: 100%;
+                height: 400px;
+            }
+            
+            .api-info, .api-docs, .demo-scripts {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>THE CLAW!</h1>
+    <p class="subtitle">"The Claw chooses who will go and who will stay!"</p>
+    
+    <div class="game-container">
+        <div class="toy-container" id="toyContainer"></div>
+        <div class="claw-machine">
+            <div class="claw" id="claw"></div>
+        </div>
+        <div class="aliens-container">
+            <div class="alien"></div>
+            <div class="alien" style="animation-delay: 0.2s"></div>
+            <div class="alien" style="animation-delay: 0.4s"></div>
+        </div>
+        <div class="message" id="message">The claw has chosen!</div>
+    </div>
+    
+    <div class="controls">
+        <div class="timer" id="timer">Time until reset: 5:00</div>
+        <div class="button-panel">
+            <button id="left">←</button>
+            <button id="grab">GRAB</button>
+            <button id="right">→</button>
+            <button id="up">↑</button>
+            <button id="automate">Automate</button>
+            <button id="down">↓</button>
+        </div>
+    </div>
+    
+    <div class="grabbed-toys">
+        <div class="score">Toys Rescued: <span id="score">0</span></div>
+        <div id="grabHistory"></div>
+    </div>
+    
+    <div class="api-info">
+        <h2>API Output</h2>
+        <pre id="apiOutput" style="background-color: #1a2530; padding: 10px; border-radius: 5px; overflow: auto; max-height: 100px;">Ready for commands</pre>
+    </div>
+
+    <div class="api-docs">
+        <button class="collapsible">REST API Documentation 📘</button>
+        <div class="content">
+            <p style="color: #ffffff; padding-top: 10px;">Control the claw programmatically with these endpoints:</p>
+            <ul style="color: #cccccc;">
+                <li><code>GET /api/status</code> - Get current game state</li>
+                <li><code>POST /api/move?x=100&y=200</code> - Move claw to coordinates</li>
+                <li><code>POST /api/grab</code> - Activate the claw</li>
+                <li><code>GET /api/toys</code> - Get positions of all toys</li>
+            </ul>
+            <p style="color: #ffffff;">For demo purposes, these endpoints are simulated in JavaScript. In a real implementation, they would be served by an actual backend.</p>
+        </div>
+    </div>
+
+    <div class="demo-scripts">
+        <button class="collapsible">Python Script Example 🐍</button>
+        <div class="content">
+            <pre style="color: #cccccc; white-space: pre-wrap; overflow-x: auto;">
+import requests
+import time
+import random
+
+# Base URL - replace with your actual server in deployment
+BASE_URL = "http://your-claw-game-server.com"
+
+def get_game_status():
+    response = requests.get(f"{BASE_URL}/api/status")
+    return response.json()
+
+def get_toys():
+    response = requests.get(f"{BASE_URL}/api/toys")
+    return response.json()
+
+def move_claw(x, y):
+    response = requests.post(f"{BASE_URL}/api/move", params={"x": x, "y": y})
+    return response.json()
+
+def grab():
+    response = requests.post(f"{BASE_URL}/api/grab")
+    return response.json()
+
+def find_closest_toy(claw_pos, toys):
+    closest_toy = None
+    min_distance = float('inf')
+    
+    for toy in toys:
+        distance = ((toy['x'] - claw_pos['x'])**2 + (toy['y'] - claw_pos['y'])**2)**0.5
+        if distance < min_distance:
+            min_distance = distance
+            closest_toy = toy
+    
+    return closest_toy
+
+def automated_claw():
+    while True:
+        # Get current game status
+        status = get_game_status()
+        
+        # Check if there are toys left to grab
+        toys = get_toys()
+        if not toys:
+            print("No toys left to grab!")
+            time.sleep(10)  # Wait for reset
+            continue
+        
+        # Find closest toy
+        closest_toy = find_closest_toy(status['claw'], toys)
+        print(f"Targeting {closest_toy['type']} at ({closest_toy['x']}, {closest_toy['y']})")
+        
+        # Move to toy
+        move_claw(closest_toy['x'], closest_toy['y'])
+        print("Positioned claw")
+        
+        # Grab the toy
+        grab_result = grab()
+        print(f"Grab attempt: {grab_result}")
+        
+        # Wait between attempts
+        time.sleep(2)
+
+if __name__ == "__main__":
+    print("Starting automated claw machine...")
+    try:
+        automated_claw()
+    except KeyboardInterrupt:
+        print("Stopping automated claw machine.")
+            </pre>
+        </div>
+
+        <button class="collapsible">JavaScript Client Example 🌐</button>
+        <div class="content">
+            <pre style="color: #cccccc; white-space: pre-wrap; overflow-x: auto;">
+// Simple JavaScript client for automating the claw machine
+
+class ClawAutomator {
+    constructor(baseUrl = '') {
+        this.baseUrl = baseUrl;
+        this.isRunning = false;
+        this.automationInterval = null;
+    }
+
+    async getStatus() {
+        const response = await fetch(`${this.baseUrl}/api/status`);
+        return await response.json();
+    }
+
+    async getToys() {
+        const response = await fetch(`${this.baseUrl}/api/toys`);
+        return await response.json();
+    }
+
+    async moveClaw(x, y) {
+        const response = await fetch(`${this.baseUrl}/api/move?x=${x}&y=${y}`, {
+            method: 'POST'
+        });
+        return await response.json();
+    }
+
+    async grab() {
+        const response = await fetch(`${this.baseUrl}/api/grab`, {
+            method: 'POST'
+        });
+        return await response.json();
+    }
+
+    findClosestToy(clawPos, toys) {
+        let closestToy = null;
+        let minDistance = Infinity;
+        
+        for (const toy of toys) {
+            const distance = Math.sqrt(
+                Math.pow(toy.x - clawPos.x, 2) + 
+                Math.pow(toy.y - clawPos.y, 2)
+            );
+            
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestToy = toy;
+            }
+        }
+        
+        return closestToy;
+    }
+
+    async start() {
+        if (this.isRunning) return;
+        
+        this.isRunning = true;
+        console.log("Starting claw automation...");
+        
+        this.automationInterval = setInterval(async () => {
+            try {
+                // Get current game status
+                const status = await this.getStatus();
+                
+                // Get available toys
+                const toys = await this.getToys();
+                if (toys.length === 0) {
+                    console.log("No toys available, waiting for reset...");
+                    return;
+                }
+                
+                // Find closest toy
+                const closestToy = this.findClosestToy(status.claw, toys);
+                console.log(`Targeting ${closestToy.type} at (${closestToy.x}, ${closestToy.y})`);
+                
+                // Move to toy
+                await this.moveClaw(closestToy.x, closestToy.y);
+                
+                // Wait a bit for movement to complete
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Grab the toy
+                const grabResult = await this.grab();
+                console.log(`Grab attempt: ${JSON.stringify(grabResult)}`);
+                
+            } catch (error) {
+                console.error("Error in automation:", error);
+            }
+        }, 3000); // Run every 3 seconds
+    }
+
+    stop() {
+        if (!this.isRunning) return;
+        
+        clearInterval(this.automationInterval);
+        this.isRunning = false;
+        console.log("Stopped claw automation");
+    }
+}
+
+// Example usage:
+// const automator = new ClawAutomator();
+// automator.start();
+// Later: automator.stop();
+            </pre>
+        </div>
+
+        <button class="collapsible">Simple Bash Script Example 🐚</button>
+        <div class="content">
+            <pre style="color: #cccccc; white-space: pre-wrap; overflow-x: auto;">
+#!/bin/bash
+
+# Base URL - replace with actual server in deployment
+BASE_URL="http://your-claw-game-server.com"
+
+# Function to get toys
+get_toys() {
+    curl -s "${BASE_URL}/api/toys"
+}
+
+# Function to move claw
+move_claw() {
+    curl -s -X POST "${BASE_URL}/api/move?x=$1&y=$2"
+}
+
+# Function to grab
+grab() {
+    curl -s -X POST "${BASE_URL}/api/grab"
+}
+
+# Main loop
+echo "Starting automated claw machine..."
+while true; do
+    # Get a random position (this is a very simple strategy)
+    # In a real script, you would parse the toys JSON and target them
+    X=$((100 + RANDOM % 400))
+    Y=$((100 + RANDOM % 300))
+    
+    echo "Moving claw to position ($X, $Y)"
+    move_claw $X $Y
+    
+    # Wait for movement
+    sleep 1
+    
+    echo "Grabbing..."
+    grab
+    
+    # Wait between operations
+    sleep 5
+done
+            </pre>
+        </div>
+    </div>
+    
+    <script>
+        // Game configuration
+        const config = {
+            resetInterval: 5 * 60, // 5 minutes in seconds (change to 10 for testing)
+            toyTypes: [
+                { name: 'Woody', icon: '🤠' },
+                { name: 'Buzz', icon: '👨‍🚀' },
+                { name: 'Rex', icon: '🦖' },
+                { name: 'Hamm', icon: '🐷' },
+                { name: 'Slinky', icon: '🐕' },
+                { name: 'Bo Peep', icon: '👩‍🌾' },
+                { name: 'Mr. Potato Head', icon: '🥔' },
+                { name: 'Alien', icon: '👽' }
+            ],
+            clawSpeed: 5,
+            toyCount: 10
+        };
+        
+        // Game state
+        const gameState = {
+            clawPos: { x: 300, y: 100 },
+            toys: [],
+            score: 0,
+            timeRemaining: config.resetInterval,
+            isGrabbing: false,
+            automationEnabled: false,
+            automationCode: null
+        };
+        
+        // DOM Elements
+        const clawElement = document.getElementById('claw');
+        const toyContainer = document.getElementById('toyContainer');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const grabHistoryElement = document.getElementById('grabHistory');
+        const messageElement = document.getElementById('message');
+        const apiOutput = document.getElementById('apiOutput');
+        
+        // Initialize the game
+        function initGame() {
+            // Position the claw initially
+            updateClawPosition();
+            
+            // Generate toys
+            generateToys();
+            
+            // Start the timer
+            startTimer();
+            
+            // Add event listeners for buttons
+            document.getElementById('left').addEventListener('click', () => moveClaw(-20, 0));
+            document.getElementById('right').addEventListener('click', () => moveClaw(20, 0));
+            document.getElementById('up').addEventListener('click', () => moveClaw(0, -20));
+            document.getElementById('down').addEventListener('click', () => moveClaw(0, 20));
+            document.getElementById('grab').addEventListener('click', activateGrab);
+            document.getElementById('automate').addEventListener('click', toggleAutomation);
+            
+            // Add keyboard controls
+            document.addEventListener('keydown', handleKeyDown);
+
+            // Setup collapsible sections
+            setupCollapsibles();
+        }
+        
+        // Generate random toys on the screen
+        function generateToys() {
+            // Clear existing toys
+            toyContainer.innerHTML = '';
+            gameState.toys = [];
+            
+            // Generate new toys
+            for (let i = 0; i < config.toyCount; i++) {
+                const toyType = config.toyTypes[Math.floor(Math.random() * config.toyTypes.length)];
+                const x = Math.random() * 540 + 30; // Keep toys within container bounds
+                const y = Math.random() * 340 + 120; // Keep toys below the claw machine
+                
+                const toy = {
+                    id: `toy-${i}`,
+                    type: toyType,
+                    x: x,
+                    y: y,
+                    grabbed: false
+                };
+                
+                gameState.toys.push(toy);
+                
+                const toyElement = document.createElement('div');
+                toyElement.id = toy.id;
+                toyElement.className = 'toy';
+                toyElement.style.left = `${toy.x}px`;
+                toyElement.style.top = `${toy.y}px`;
+                toyElement.textContent = toy.type.icon;
+                toyElement.style.fontSize = '30px';
+                
+                toyContainer.appendChild(toyElement);
+            }
+            
+            logApiOutput('GET /api/toys', JSON.stringify(gameState.toys.map(t => ({ id: t.id, type: t.type.name, x: t.x, y: t.y }))));
+        }
+        
+        // Update the claw position
+        function updateClawPosition() {
+            clawElement.style.left = `${gameState.clawPos.x}px`;
+            clawElement.style.top = `${gameState.clawPos.y}px`;
+        }
+        
+        // Move the claw
+        function moveClaw(deltaX, deltaY) {
+            // Don't allow movement while grabbing
+            if (gameState.isGrabbing) return;
+            
+            // Update the claw position
+            gameState.clawPos.x += deltaX;
+            gameState.clawPos.y += deltaY;
+            
+            // Keep the claw within bounds
+            gameState.clawPos.x = Math.max(30, Math.min(gameState.clawPos.x, 540));
+            gameState.clawPos.y = Math.max(80, Math.min(gameState.clawPos.y, 440));
+            
+            // Update the claw's position on screen
+            updateClawPosition();
+            
+            // Log API output
+            logApiOutput('POST /api/move', JSON.stringify({ x: gameState.clawPos.x, y: gameState.clawPos.y }));
+        }
+        
+        // Activate the grab
+        function activateGrab() {
+            if (gameState.isGrabbing) return;
+            
+            gameState.isGrabbing = true;
+            clawElement.classList.add('grabbing');
+            
+            // Check if any toys are caught
+            const caughtToy = checkForCaughtToy();
+            
+            // Log API output
+            logApiOutput('POST /api/grab', JSON.stringify({ success: !!caughtToy }));
+            
+            setTimeout(() => {
+                if (caughtToy) {
+                    // Toy caught!
+                    grabToy(caughtToy);
+                    
+                    // Show message
+                    messageElement.textContent = `The claw has chosen ${caughtToy.type.name}!`;
+                    messageElement.style.display = 'block';
+                    setTimeout(() => {
+                        messageElement.style.display = 'none';
+                    }, 2000);
+                }
+                
+                // Reset after grabbing
+                setTimeout(() => {
+                    clawElement.classList.remove('grabbing');
+                    gameState.isGrabbing = false;
+                }, 500);
+            }, 1000);
+        }
+        
+        // Check if a toy is caught
+        function checkForCaughtToy() {
+            const clawRect = {
+                x: gameState.clawPos.x + 20,
+                y: gameState.clawPos.y + 40,
+                width: 20,
+                height: 20
+            };
+            
+            for (const toy of gameState.toys) {
+                if (toy.grabbed) continue;
+                
+                const toyRect = {
+                    x: toy.x + 10,
+                    y: toy.y + 10,
+                    width: 20,
+                    height: 20
+                };
+                
+                // Simple collision detection
+                if (clawRect.x < toyRect.x + toyRect.width &&
+                    clawRect.x + clawRect.width > toyRect.x &&
+                    clawRect.y < toyRect.y + toyRect.height &&
+                    clawRect.y + clawRect.height > toyRect.y) {
+                    return toy;
+                }
+            }
+            
+            return null;
+        }
+        
+        // Grab a toy
+        function grabToy(toy) {
+            toy.grabbed = true;
+            gameState.score++;
+            scoreElement.textContent = gameState.score;
+            
+            // Update the toy display
+            const toyElement = document.getElementById(toy.id);
+            if (toyElement) {
+                toyElement.style.opacity = '0.3';
+            }
+            
+            // Add to grab history
+            const historyItem = document.createElement('span');
+            historyItem.textContent = toy.type.icon;
+            historyItem.style.fontSize = '24px';
+            historyItem.style.margin = '0 5px';
+            grabHistoryElement.appendChild(historyItem);
+        }
+        
+        // Start the timer
+        function startTimer() {
+            updateTimerDisplay();
+            
+            const timerInterval = setInterval(() => {
+                gameState.timeRemaining--;
+                
+                if (gameState.timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    resetGame();
+                } else {
+                    updateTimerDisplay();
+                }
+            }, 1000);
+        }
+        
+        // Update the timer display
+        function updateTimerDisplay() {
+            const minutes = Math.floor(gameState.timeRemaining / 60);
+            const seconds = gameState.timeRemaining % 60;
+            timerElement.textContent = `Time until reset: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Make timer red when less than a minute remains
+            if (gameState.timeRemaining < 60) {
+                timerElement.style.color = '#f44336';
+            } else {
+                timerElement.style.color = '#ffeb3b';
+            }
+        }
+        
+        // Reset the game
+        function resetGame() {
+            // Display reset message
+            messageElement.textContent = "The Claw Machine has been reset!";
+            messageElement.style.display = 'block';
+            
+            // Reset game state
+            gameState.timeRemaining = config.resetInterval;
+            
+            // Generate new toys
+            setTimeout(() => {
+                generateToys();
+                messageElement.style.display = 'none';
+                startTimer();
+            }, 2000);
+        }
+        
+        // Handle keyboard input
+        function handleKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                    moveClaw(-20, 0);
+                    break;
+                case 'ArrowRight':
+                    moveClaw(20, 0);
+                    break;
+                case 'ArrowUp':
+                    moveClaw(0, -20);
+                    break;
+                case 'ArrowDown':
+                    moveClaw(0, 20);
+                    break;
+                case ' ':
+                    activateGrab();
+                    break;
+            }
+        }
+        
+        // Toggle automation
+        function toggleAutomation() {
+            gameState.automationEnabled = !gameState.automationEnabled;
+            
+            const autoButton = document.getElementById('automate');
+            if (gameState.automationEnabled) {
+                autoButton.textContent = 'Stop Auto';
+                autoButton.style.backgroundColor = '#f44336';
+                
+                // Simple automation: randomly move and grab
+                gameState.automationCode = setInterval(() => {
+                    if (gameState.isGrabbing) return;
+                    
+                    // 20% chance to grab, otherwise move
+                    if (Math.random() < 0.2) {
+                        activateGrab();
+                    } else {
+                        const moveX = (Math.random() - 0.5) * 80;
+                        const moveY = (Math.random() - 0.5) * 80;
+                        moveClaw(moveX, moveY);
+                    }
+                }, 1000);
+            } else {
+                autoButton.textContent = 'Automate';
+                autoButton.style.backgroundColor = '#f9d71c';
+                clearInterval(gameState.automationCode);
+            }
+        }
+        
+        // Log API output for demonstration
+        function logApiOutput(endpoint, data) {
+            apiOutput.textContent = `${endpoint} → ${data}`;
+        }
+
+        // Setup collapsible sections
+        function setupCollapsibles() {
+            const coll = document.getElementsByClassName("collapsible");
+            for (let i = 0; i < coll.length; i++) {
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    const content = this.nextElementSibling;
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
